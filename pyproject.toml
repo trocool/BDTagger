@@ -34,7 +34,7 @@ bdtagger = "bdtagger.cli:app"
 [tool.hatch.build.targets.wheel]
 
 packages = [
-    "bdtagger"
+    "src/bdtagger"
 ]
 
 
