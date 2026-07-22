@@ -68,8 +68,18 @@ class CBZReader(ComicReader):
                         "utf-8"
                     )
 
+                    metadata = parse_comicinfo(
+                        xml
+                    )
+
                     result.update(
-                        parse_comicinfo(xml)
+                        {
+                           "title": metadata.title or "",
+                           "series": metadata.series or "",
+                           "volume": metadata.volume or "",
+                           "publisher": metadata.publisher or "",
+                           "language": metadata.language or "",
+                        }
                     )
 
                 return result

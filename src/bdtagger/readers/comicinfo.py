@@ -1,37 +1,152 @@
 from xml.etree import ElementTree
 
+from bdtagger.models.metadata import ComicMetadata
+
+
+def clean_value(
+    value: str | None,
+) -> str | None:
+    """
+    Nettoie une valeur XML.
+    """
+
+    if value is None:
+        return None
+
+    value = value.strip()
+
+    if not value:
+        return None
+
+    return value
+
+
+def split_values(
+    value: str | None,
+) -> list[str]:
+    """
+    Convertit une liste ComicInfo.
+    """
+
+    if not value:
+        return []
+
+    separators = [
+        ",",
+        ";",
+    ]
+
+    result = [value]
+
+    for separator in separators:
+        result = [
+            item
+            for part in result
+            for item in part.split(separator)
+        ]
+
+    return [
+        item.strip()
+        for item in result
+        if item.strip()
+    ]
+
+
+def normalize_language(
+    value: str | None,
+) -> str | None:
+    """
+    Normalise les codes langue.
+    """
+
+    value = clean_value(value)
+
+    if value is None:
+        return None
+
+    mapping = {
+        "fra": "fr",
+        "fre": "fr",
+        "eng": "en",
+        "jpn": "ja",
+    }
+
+    return mapping.get(
+        value.lower(),
+        value.lower(),
+    )
+
+
+def find_element(
+    root: ElementTree.Element,
+    name: str,
+) -> ElementTree.Element | None:
+    """
+    Recherche un élément
+    avec ou sans namespace.
+    """
+
+    for element in root.iter():
+
+        if (
+            element.tag.endswith(name)
+        ):
+            return element
+
+    return None
+
 
 def parse_comicinfo(
     xml_content: str,
-) -> dict[str, str]:
+) -> ComicMetadata:
     """
-    Parse un fichier ComicInfo.xml.
-
-    Retourne les métadonnées principales.
+    Parse ComicInfo.xml.
     """
 
     root = ElementTree.fromstring(
         xml_content
     )
 
-    metadata: dict[str, str] = {}
+    def get(
+        name: str,
+    ) -> str | None:
 
-    fields = {
-        "Title": "title",
-        "Series": "series",
-        "Number": "volume",
-        "Publisher": "publisher",
-        "Year": "year",
-        "LanguageISO": "language",
-        "Writer": "writer",
-        "Artist": "artist",
-    }
+        element = find_element(
+            root,
+            name,
+        )
 
-    for xml_name, key in fields.items():
+        if element is None:
+            return None
 
-        element = root.find(xml_name)
+        return clean_value(
+            element.text
+        )
 
-        if element is not None and element.text:
-            metadata[key] = element.text.strip()
+    return ComicMetadata(
+        title=get("Title"),
 
-    return metadata
+        series=get("Series"),
+
+        volume=get("Number"),
+
+        publisher=get("Publisher"),
+
+        year=get("Year"),
+
+        language=normalize_language(
+            get("LanguageISO")
+        ),
+
+        writers=split_values(
+            get("Writer")
+        ),
+
+        artists=split_values(
+            get("Artist")
+        ),
+
+        genres=split_values(
+            get("Genre")
+        ),
+    )
