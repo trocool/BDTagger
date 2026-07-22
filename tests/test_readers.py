@@ -1,0 +1,41 @@
+from pathlib import Path
+
+import pytest
+
+from bdtagger.readers import ComicReader
+
+
+class DummyReader(ComicReader):
+
+    supported_extensions = {
+        ".cbz"
+    }
+    def read(
+        self,
+        file_path: Path,
+    ) -> dict[str, str]:
+
+        return {
+            "file": str(file_path)
+        }
+
+
+def test_reader_supports_extension():
+
+    reader = DummyReader()
+
+    assert reader.supports(
+        Path("album.cbz")
+    )
+
+    assert not reader.supports(
+        Path("album.pdf")
+    )
+
+
+def test_reader_is_abstract():
+
+    with pytest.raises(
+        TypeError
+    ):
+        ComicReader()
